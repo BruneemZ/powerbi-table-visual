@@ -1,0 +1,146 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Columns",
+      "name": "columns",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Status (RAG)",
+      "name": "status",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Budget Plan",
+      "name": "budgetPlan",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Budget Forecast",
+      "name": "budgetForecast",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Budget Actual",
+      "name": "budgetActual",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "table": {
+        "rows": {
+          "select": [
+            { "for": { "in": "columns" } },
+            { "for": { "in": "status" } },
+            { "for": { "in": "budgetPlan" } },
+            { "for": { "in": "budgetForecast" } },
+            { "for": { "in": "budgetActual" } }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "tableSettings": {
+      "displayName": "Table Settings",
+      "properties": {
+        "rowHeight": {
+          "displayName": "Row Height",
+          "type": { "numeric": true }
+        },
+        "headerHeight": {
+          "displayName": "Header Height",
+          "type": { "numeric": true }
+        },
+        "headerFontSize": {
+          "displayName": "Header Font Size",
+          "type": { "numeric": true }
+        },
+        "bodyFontSize": {
+          "displayName": "Body Font Size",
+          "type": { "numeric": true }
+        },
+        "rowColor1": {
+          "displayName": "Row Color (Odd)",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "rowColor2": {
+          "displayName": "Row Color (Even)",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "headerBackgroundColor": {
+          "displayName": "Header Background Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "headerFontColor": {
+          "displayName": "Header Font Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "borderColor": {
+          "displayName": "Border Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        }
+      }
+    },
+    "statusSettings": {
+      "displayName": "Status Settings",
+      "properties": {
+        "redColor": {
+          "displayName": "Red Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "amberColor": {
+          "displayName": "Amber Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "greenColor": {
+          "displayName": "Green Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "circleSize": {
+          "displayName": "Circle Size",
+          "type": { "numeric": true }
+        }
+      }
+    },
+    "budgetChartSettings": {
+      "displayName": "Budget Chart Settings",
+      "properties": {
+        "chartWidth": {
+          "displayName": "Chart Width",
+          "type": { "numeric": true }
+        },
+        "planColor": {
+          "displayName": "Plan Bar Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "forecastColor": {
+          "displayName": "Forecast Bar Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "actualColor": {
+          "displayName": "Actual Bar Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "increaseColor": {
+          "displayName": "Increase (Bridge) Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "decreaseColor": {
+          "displayName": "Decrease (Bridge) Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "showValues": {
+          "displayName": "Show Values on Bars",
+          "type": { "bool": true }
+        },
+        "valueFontSize": {
+          "displayName": "Value Font Size",
+          "type": { "numeric": true }
+        }
+      }
+    }
+  },
+  "privileges": []
+}

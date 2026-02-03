@@ -1,0 +1,25 @@
+{
+  "visual": {
+    "name": "TableBudgetVisual",
+    "displayName": "Table Budget Waterfall",
+    "guid": "tableBudgetVisualA1B2C3D4E5F67890",
+    "visualClassName": "Visual",
+    "version": "1.0.0.0",
+    "description": "Table visual with RAG status and embedded mini waterfall charts for budget tracking",
+    "supportUrl": "https://github.com/BruneemZ/powerbi-table-visual",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.1.0",
+  "author": {
+    "name": "Emmanuel Bruneau",
+    "email": "emmanuel@example.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "externalJS": [],
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": []
+}

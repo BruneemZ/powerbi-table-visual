@@ -1,0 +1,39 @@
+{
+  "name": "powerbi-table-visual",
+  "version": "1.0.0",
+  "description": "Power BI custom table visual with RAG status and embedded waterfall charts",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "pbiviz:package": "npx pbiviz package",
+    "pbiviz:start": "npx pbiviz start",
+    "pbiviz:cert": "npx pbiviz --install-cert",
+    "pbiviz:info": "npx pbiviz --version"
+  },
+  "keywords": [
+    "powerbi",
+    "visual",
+    "table",
+    "waterfall",
+    "budget"
+  ],
+  "author": "Emmanuel Bruneau",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "css-loader": "^7.1.3",
+    "d3": "^7.9.0",
+    "less": "^4.5.1",
+    "less-loader": "^12.3.0",
+    "powerbi-visuals-api": "~5.1.0",
+    "powerbi-visuals-tools": "^7.0.2",
+    "powerbi-visuals-utils-dataviewutils": "^6.1.0",
+    "powerbi-visuals-utils-formattingmodel": "^6.2.2",
+    "powerbi-visuals-utils-formattingutils": "^6.1.2",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
+  }
+}
