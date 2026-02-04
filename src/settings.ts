@@ -89,6 +89,16 @@ class TableSettingsCard extends FormattingSettingsCard {
         }
     });
 
+    textColumnWidth = new formattingSettings.NumUpDown({
+        name: "textColumnWidth",
+        displayName: "Text Column Width",
+        value: 150,
+        options: {
+            minValue: { type: powerbi.visuals.ValidatorType.Min, value: 60 },
+            maxValue: { type: powerbi.visuals.ValidatorType.Max, value: 400 }
+        }
+    });
+
     name: string = "tableSettings";
     displayName: string = "Table Settings";
     slices: Array<FormattingSettingsSlice> = [
@@ -97,6 +107,7 @@ class TableSettingsCard extends FormattingSettingsCard {
         this.headerFontSize,
         this.bodyFontSize,
         this.cellPadding,
+        this.textColumnWidth,
         this.rowColor1,
         this.rowColor2,
         this.headerBackgroundColor,

@@ -268,6 +268,7 @@ export class Visual implements IVisual {
         }
 
         // Text column headers
+        const textColWidth = settings.textColumnWidth.value;
         textColumns.forEach(col => {
             const th = document.createElement("th");
             th.textContent = col.displayName;
@@ -277,6 +278,8 @@ export class Visual implements IVisual {
             th.style.color = settings.headerFontColor.value.value;
             th.style.cursor = "pointer";
             th.className = "sortable-header";
+            th.style.width = textColWidth + "px";
+            th.style.minWidth = textColWidth + "px";
 
             if (this.sortState && this.sortState.columnIndex === logicalIndex) {
                 th.textContent += this.sortState.ascending ? " \u25B2" : " \u25BC";
@@ -380,12 +383,15 @@ export class Visual implements IVisual {
             }
 
             // Text cells
+            const textWidth = settings.textColumnWidth.value;
             row.textValues.forEach(tv => {
                 const td = document.createElement("td");
                 td.textContent = tv.value;
-                td.style.height = settings.rowHeight.value + "px";
+                td.style.minHeight = settings.rowHeight.value + "px";
                 td.style.fontSize = settings.bodyFontSize.value + "px";
                 td.style.borderBottom = `1px solid ${settings.borderColor.value.value}`;
+                td.style.width = textWidth + "px";
+                td.style.minWidth = textWidth + "px";
                 tr.appendChild(td);
             });
 
@@ -460,7 +466,7 @@ export class Visual implements IVisual {
 
         const chartWidth = chartSettings.chartWidth.value;
         const chartHeight = tableSettings.rowHeight.value - 4;
-        const margin = { top: 12, right: 4, bottom: 2, left: 4 };
+        const margin = { top: 16, right: 4, bottom: 2, left: 4 };
         const innerWidth = chartWidth - margin.left - margin.right;
         const innerHeight = chartHeight - margin.top - margin.bottom;
 
@@ -570,6 +576,22 @@ export class Visual implements IVisual {
 
         svg.appendChild(createRect(bridge1X, bridge1Y, bridgeWidth, Math.abs(bridge1H), bridge1Color));
 
+        // Delta label on Bridge 1
+        if (showValues && delta1 !== 0) {
+            const deltaLabel = (delta1 > 0 ? "+" : "") + this.formatBudgetValue(delta1);
+            const deltaLabelY = bridge1Y - 2;
+            const deltaEl = document.createElementNS(svgNS, "text");
+            deltaEl.setAttribute("x", String(slotCenterX(1)));
+            deltaEl.setAttribute("y", String(deltaLabelY));
+            deltaEl.setAttribute("text-anchor", "middle");
+            deltaEl.setAttribute("font-size", String(valueFontSize));
+            deltaEl.setAttribute("fill", bridge1Color);
+            deltaEl.setAttribute("font-family", "Segoe UI, sans-serif");
+            deltaEl.setAttribute("font-weight", "600");
+            deltaEl.textContent = deltaLabel;
+            svg.appendChild(deltaEl);
+        }
+
         // Connector Plan -> Bridge 1
         const planTopY = yScale(plan);
         svg.appendChild(createConnector(slotCenterX(0) + barWidth / 2, bridge1X, planTopY));
@@ -608,6 +630,22 @@ export class Visual implements IVisual {
         }
 
         svg.appendChild(createRect(bridge2X, bridge2Y, bridgeWidth, Math.abs(bridge2H), bridge2Color));
+
+        // Delta label on Bridge 2
+        if (showValues && delta2 !== 0) {
+            const deltaLabel2 = (delta2 > 0 ? "+" : "") + this.formatBudgetValue(delta2);
+            const deltaLabel2Y = bridge2Y - 2;
+            const deltaEl2 = document.createElementNS(svgNS, "text");
+            deltaEl2.setAttribute("x", String(slotCenterX(3)));
+            deltaEl2.setAttribute("y", String(deltaLabel2Y));
+            deltaEl2.setAttribute("text-anchor", "middle");
+            deltaEl2.setAttribute("font-size", String(valueFontSize));
+            deltaEl2.setAttribute("fill", bridge2Color);
+            deltaEl2.setAttribute("font-family", "Segoe UI, sans-serif");
+            deltaEl2.setAttribute("font-weight", "600");
+            deltaEl2.textContent = deltaLabel2;
+            svg.appendChild(deltaEl2);
+        }
 
         // Connector Forecast -> Bridge 2
         svg.appendChild(createConnector(slotCenterX(2) + barWidth / 2, bridge2X, forecastTopY));

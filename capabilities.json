@@ -84,6 +84,10 @@
         "cellPadding": {
           "displayName": "Cell Padding",
           "type": { "numeric": true }
+        },
+        "textColumnWidth": {
+          "displayName": "Text Column Width",
+          "type": { "numeric": true }
         }
       }
     },
