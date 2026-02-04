@@ -40,6 +40,8 @@ export class Visual implements IVisual {
     private columnInfos: ColumnInfo[];
     private tableData: TableRowData[];
     private sortState: SortState | null;
+    private columnWidths: Map<number, number>;
+    private isResizing: boolean;
 
     constructor(options: VisualConstructorOptions) {
         this.formattingSettingsService = new FormattingSettingsService();
@@ -47,6 +49,8 @@ export class Visual implements IVisual {
         this.sortState = null;
         this.columnInfos = [];
         this.tableData = [];
+        this.columnWidths = new Map();
+        this.isResizing = false;
 
         this.tableContainer = document.createElement("div");
         this.tableContainer.className = "table-visual-container";
@@ -160,9 +164,66 @@ export class Visual implements IVisual {
         return result;
     }
 
+    // --- Column Resize ---
+
+    private getColumnWidth(logicalIndex: number, defaultWidth: number): number {
+        return this.columnWidths.get(logicalIndex) || defaultWidth;
+    }
+
+    private addResizeHandle(th: HTMLTableCellElement, logicalIndex: number): void {
+        const handle = document.createElement("div");
+        handle.className = "col-resize-handle";
+
+        handle.addEventListener("mousedown", (e: MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.isResizing = true;
+
+            const startX = e.clientX;
+            const startWidth = th.offsetWidth;
+
+            const onMouseMove = (moveEvent: MouseEvent) => {
+                const diff = moveEvent.clientX - startX;
+                const newWidth = Math.max(30, startWidth + diff);
+                this.columnWidths.set(logicalIndex, newWidth);
+                th.style.width = newWidth + "px";
+                th.style.minWidth = newWidth + "px";
+
+                // Update matching body cells
+                const table = th.closest("table");
+                if (table) {
+                    const colIndex = Array.from(th.parentElement!.children).indexOf(th);
+                    const tbody = table.querySelector("tbody");
+                    if (tbody) {
+                        tbody.querySelectorAll("tr").forEach(row => {
+                            const td = row.children[colIndex] as HTMLTableCellElement;
+                            if (td) {
+                                td.style.width = newWidth + "px";
+                                td.style.minWidth = newWidth + "px";
+                            }
+                        });
+                    }
+                }
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("mouseup", onMouseUp);
+                // Delay reset to prevent sort trigger
+                setTimeout(() => { this.isResizing = false; }, 50);
+            };
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+        });
+
+        th.appendChild(handle);
+    }
+
     // --- Sorting ---
 
     private onHeaderClick(columnIndex: number): void {
+        if (this.isResizing) return;
         if (this.sortState && this.sortState.columnIndex === columnIndex) {
             this.sortState.ascending = !this.sortState.ascending;
         } else {
@@ -246,7 +307,16 @@ export class Visual implements IVisual {
         if (hasStatus) {
             const th = document.createElement("th");
             const statusCol = this.columnInfos.find(c => c.role === "status");
-            th.textContent = statusCol ? statusCol.displayName : "Status";
+            const statusDefaultW = this.formattingSettings.statusSettings.columnWidth.value;
+            const statusW = this.getColumnWidth(logicalIndex, statusDefaultW);
+
+            const headerText = document.createElement("span");
+            headerText.textContent = statusCol ? statusCol.displayName : "Status";
+            if (this.sortState && this.sortState.columnIndex === logicalIndex) {
+                headerText.textContent += this.sortState.ascending ? " ▲" : " ▼";
+            }
+            th.appendChild(headerText);
+
             th.style.height = settings.headerHeight.value + "px";
             th.style.fontSize = settings.headerFontSize.value + "px";
             th.style.backgroundColor = settings.headerBackgroundColor.value.value;
@@ -254,39 +324,41 @@ export class Visual implements IVisual {
             th.style.textAlign = "center";
             th.style.cursor = "pointer";
             th.className = "sortable-header";
-            th.style.width = this.formattingSettings.statusSettings.columnWidth.value + "px";
-            th.style.minWidth = this.formattingSettings.statusSettings.columnWidth.value + "px";
-
-            if (this.sortState && this.sortState.columnIndex === logicalIndex) {
-                th.textContent += this.sortState.ascending ? " ▲" : " ▼";
-            }
+            th.style.width = statusW + "px";
+            th.style.minWidth = statusW + "px";
 
             const sortIdx = logicalIndex;
             th.addEventListener("click", () => this.onHeaderClick(sortIdx));
+            this.addResizeHandle(th, logicalIndex);
             tr.appendChild(th);
             logicalIndex++;
         }
 
         // Text column headers
-        const textColWidth = settings.textColumnWidth.value;
+        const textDefaultW = settings.textColumnWidth.value;
         textColumns.forEach(col => {
             const th = document.createElement("th");
-            th.textContent = col.displayName;
+            const colW = this.getColumnWidth(logicalIndex, textDefaultW);
+
+            const headerText = document.createElement("span");
+            headerText.textContent = col.displayName;
+            if (this.sortState && this.sortState.columnIndex === logicalIndex) {
+                headerText.textContent += this.sortState.ascending ? " ▲" : " ▼";
+            }
+            th.appendChild(headerText);
+
             th.style.height = settings.headerHeight.value + "px";
             th.style.fontSize = settings.headerFontSize.value + "px";
             th.style.backgroundColor = settings.headerBackgroundColor.value.value;
             th.style.color = settings.headerFontColor.value.value;
             th.style.cursor = "pointer";
             th.className = "sortable-header";
-            th.style.width = textColWidth + "px";
-            th.style.minWidth = textColWidth + "px";
-
-            if (this.sortState && this.sortState.columnIndex === logicalIndex) {
-                th.textContent += this.sortState.ascending ? " \u25B2" : " \u25BC";
-            }
+            th.style.width = colW + "px";
+            th.style.minWidth = colW + "px";
 
             const sortIdx = logicalIndex;
             th.addEventListener("click", () => this.onHeaderClick(sortIdx));
+            this.addResizeHandle(th, logicalIndex);
 
             tr.appendChild(th);
             logicalIndex++;
@@ -295,12 +367,16 @@ export class Visual implements IVisual {
         // Budget waterfall header
         if (hasBudget) {
             const th = document.createElement("th");
+            const budgetDefaultW = this.formattingSettings.budgetChartSettings.chartWidth.value;
+            const budgetW = this.getColumnWidth(logicalIndex, budgetDefaultW);
+
             th.style.height = settings.headerHeight.value + "px";
             th.style.fontSize = settings.headerFontSize.value + "px";
             th.style.backgroundColor = settings.headerBackgroundColor.value.value;
             th.style.color = settings.headerFontColor.value.value;
             th.style.textAlign = "center";
-            th.style.minWidth = this.formattingSettings.budgetChartSettings.chartWidth.value + "px";
+            th.style.width = budgetW + "px";
+            th.style.minWidth = budgetW + "px";
             th.style.padding = "2px 4px";
             th.style.lineHeight = "1.2";
 
@@ -350,7 +426,9 @@ export class Visual implements IVisual {
             });
 
             th.appendChild(legendDiv);
+            this.addResizeHandle(th, logicalIndex);
             tr.appendChild(th);
+            logicalIndex++;
         }
 
         thead.appendChild(tr);
@@ -361,6 +439,11 @@ export class Visual implements IVisual {
         const settings = this.formattingSettings.tableSettings;
         const tbody = document.createElement("tbody");
 
+        // Compute column index offsets for width lookup
+        const statusDefaultW = this.formattingSettings.statusSettings.columnWidth.value;
+        const textDefaultW = settings.textColumnWidth.value;
+        const budgetDefaultW = this.formattingSettings.budgetChartSettings.chartWidth.value;
+
         this.tableData.forEach((row, rowIndex) => {
             const tr = document.createElement("tr");
             const bgColor = rowIndex % 2 === 0
@@ -368,41 +451,49 @@ export class Visual implements IVisual {
                 : settings.rowColor2.value.value;
             tr.style.backgroundColor = bgColor;
 
+            let colIdx = 0;
+
             // Status cell (EN PREMIER)
             if (hasStatus) {
+                const statusW = this.getColumnWidth(colIdx, statusDefaultW);
                 const td = document.createElement("td");
                 td.style.textAlign = "center";
                 td.style.verticalAlign = "middle";
                 td.style.height = settings.rowHeight.value + "px";
-                td.style.width = this.formattingSettings.statusSettings.columnWidth.value + "px";
-                td.style.minWidth = this.formattingSettings.statusSettings.columnWidth.value + "px";
+                td.style.width = statusW + "px";
+                td.style.minWidth = statusW + "px";
                 td.style.borderBottom = `1px solid ${settings.borderColor.value.value}`;
                 const svg = this.createStatusCircle(row.status || "");
                 td.appendChild(svg);
                 tr.appendChild(td);
+                colIdx++;
             }
 
             // Text cells
-            const textWidth = settings.textColumnWidth.value;
             row.textValues.forEach(tv => {
+                const textW = this.getColumnWidth(colIdx, textDefaultW);
                 const td = document.createElement("td");
                 td.textContent = tv.value;
                 td.style.minHeight = settings.rowHeight.value + "px";
                 td.style.fontSize = settings.bodyFontSize.value + "px";
                 td.style.borderBottom = `1px solid ${settings.borderColor.value.value}`;
-                td.style.width = textWidth + "px";
-                td.style.minWidth = textWidth + "px";
+                td.style.width = textW + "px";
+                td.style.minWidth = textW + "px";
                 tr.appendChild(td);
+                colIdx++;
             });
 
             // Budget waterfall cell
             if (hasBudget) {
+                const budgetW = this.getColumnWidth(colIdx, budgetDefaultW);
                 const td = document.createElement("td");
                 td.style.textAlign = "center";
                 td.style.verticalAlign = "middle";
                 td.style.height = settings.rowHeight.value + "px";
                 td.style.borderBottom = `1px solid ${settings.borderColor.value.value}`;
                 td.style.padding = "2px 4px";
+                td.style.width = budgetW + "px";
+                td.style.minWidth = budgetW + "px";
 
                 if (row.budgetPlan !== null || row.budgetForecast !== null || row.budgetActual !== null) {
                     const svg = this.createWaterfallChart(

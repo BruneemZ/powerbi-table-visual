@@ -32,6 +32,22 @@
                             opacity: 0.85;
                         }
                     }
+
+                    .col-resize-handle {
+                        position: absolute;
+                        right: 0;
+                        top: 0;
+                        bottom: 0;
+                        width: 5px;
+                        cursor: col-resize;
+                        background: transparent;
+                        z-index: 2;
+
+                        &:hover,
+                        &:active {
+                            background: rgba(255, 255, 255, 0.3);
+                        }
+                    }
                 }
             }
         }
