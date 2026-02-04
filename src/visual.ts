@@ -41,7 +41,9 @@ export class Visual implements IVisual {
     private tableData: TableRowData[];
     private sortState: SortState | null;
     private columnWidths: Map<number, number>;
+    private userResizedColumns: Set<number>;
     private isResizing: boolean;
+    private measureCanvas: HTMLCanvasElement;
 
     constructor(options: VisualConstructorOptions) {
         this.formattingSettingsService = new FormattingSettingsService();
@@ -50,7 +52,9 @@ export class Visual implements IVisual {
         this.columnInfos = [];
         this.tableData = [];
         this.columnWidths = new Map();
+        this.userResizedColumns = new Set();
         this.isResizing = false;
+        this.measureCanvas = document.createElement("canvas");
 
         this.tableContainer = document.createElement("div");
         this.tableContainer.className = "table-visual-container";
@@ -164,6 +168,74 @@ export class Visual implements IVisual {
         return result;
     }
 
+    // --- Column Auto-Sizing ---
+
+    private measureTextWidth(text: string, font: string): number {
+        const ctx = this.measureCanvas.getContext("2d");
+        if (!ctx) return text.length * 7;
+        ctx.font = font;
+        return ctx.measureText(text).width;
+    }
+
+    private computeAutoColumnWidths(): void {
+        const settings = this.formattingSettings.tableSettings;
+        const padding = settings.cellPadding.value * 2 + 8; // left+right padding + margin
+        const headerFont = `600 ${settings.headerFontSize.value}px "Segoe UI", sans-serif`;
+        const bodyFont = `${settings.bodyFontSize.value}px "Segoe UI", sans-serif`;
+
+        const hasStatus = this.columnInfos.some(c => c.role === "status");
+        const hasBudget = this.columnInfos.some(c =>
+            c.role === "budgetPlan" || c.role === "budgetForecast" || c.role === "budgetActual"
+        );
+        const textColumns = this.columnInfos.filter(c => c.role === "columns");
+
+        let logicalIndex = 0;
+
+        // Status column: size based on header text + circle
+        if (hasStatus) {
+            if (!this.userResizedColumns.has(logicalIndex)) {
+                const statusCol = this.columnInfos.find(c => c.role === "status");
+                const headerName = statusCol ? statusCol.displayName : "Status";
+                const headerW = this.measureTextWidth(headerName + " ▼", headerFont) + padding;
+                const circleW = this.formattingSettings.statusSettings.circleSize.value + padding;
+                this.columnWidths.set(logicalIndex, Math.max(headerW, circleW, 40));
+            }
+            logicalIndex++;
+        }
+
+        // Text columns: size based on header + content
+        textColumns.forEach(col => {
+            if (!this.userResizedColumns.has(logicalIndex)) {
+                const headerW = this.measureTextWidth(col.displayName + " ▼", headerFont) + padding;
+
+                // Measure content: sample all rows, find the longest
+                let maxContentW = 0;
+                for (const row of this.tableData) {
+                    const textIdx = logicalIndex - (hasStatus ? 1 : 0);
+                    const val = row.textValues[textIdx]?.value || "";
+                    if (val.length > 0) {
+                        const w = this.measureTextWidth(val, bodyFont) + padding;
+                        if (w > maxContentW) maxContentW = w;
+                    }
+                }
+
+                // Clamp: min 60px, max 400px
+                const autoW = Math.min(400, Math.max(60, headerW, maxContentW));
+                this.columnWidths.set(logicalIndex, autoW);
+            }
+            logicalIndex++;
+        });
+
+        // Budget column: use chartWidth setting
+        if (hasBudget) {
+            if (!this.userResizedColumns.has(logicalIndex)) {
+                const budgetW = this.formattingSettings.budgetChartSettings.chartWidth.value;
+                this.columnWidths.set(logicalIndex, budgetW);
+            }
+            logicalIndex++;
+        }
+    }
+
     // --- Column Resize ---
 
     private getColumnWidth(logicalIndex: number, defaultWidth: number): number {
@@ -222,6 +294,7 @@ export class Visual implements IVisual {
                 document.removeEventListener("mousemove", onMouseMove);
                 document.removeEventListener("mouseup", onMouseUp);
                 handle.style.background = "transparent";
+                this.userResizedColumns.add(logicalIndex);
                 setTimeout(() => { this.isResizing = false; }, 50);
             };
 
@@ -295,6 +368,9 @@ export class Visual implements IVisual {
         while (this.tableContainer.firstChild) {
             this.tableContainer.removeChild(this.tableContainer.firstChild);
         }
+
+        // Auto-compute column widths based on content
+        this.computeAutoColumnWidths();
 
         const hasStatus = this.columnInfos.some(c => c.role === "status");
         const hasBudget = this.columnInfos.some(c =>
