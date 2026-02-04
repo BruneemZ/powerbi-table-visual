@@ -79,6 +79,16 @@ class TableSettingsCard extends FormattingSettingsCard {
         value: { value: "#E0E0E0" }
     });
 
+    cellPadding = new formattingSettings.NumUpDown({
+        name: "cellPadding",
+        displayName: "Cell Padding",
+        value: 8,
+        options: {
+            minValue: { type: powerbi.visuals.ValidatorType.Min, value: 2 },
+            maxValue: { type: powerbi.visuals.ValidatorType.Max, value: 20 }
+        }
+    });
+
     name: string = "tableSettings";
     displayName: string = "Table Settings";
     slices: Array<FormattingSettingsSlice> = [
@@ -86,6 +96,7 @@ class TableSettingsCard extends FormattingSettingsCard {
         this.headerHeight,
         this.headerFontSize,
         this.bodyFontSize,
+        this.cellPadding,
         this.rowColor1,
         this.rowColor2,
         this.headerBackgroundColor,
@@ -126,13 +137,24 @@ class StatusSettingsCard extends FormattingSettingsCard {
         }
     });
 
+    columnWidth = new formattingSettings.NumUpDown({
+        name: "columnWidth",
+        displayName: "Status Column Width",
+        value: 60,
+        options: {
+            minValue: { type: powerbi.visuals.ValidatorType.Min, value: 30 },
+            maxValue: { type: powerbi.visuals.ValidatorType.Max, value: 150 }
+        }
+    });
+
     name: string = "statusSettings";
     displayName: string = "Status Settings";
     slices: Array<FormattingSettingsSlice> = [
         this.redColor,
         this.amberColor,
         this.greenColor,
-        this.circleSize
+        this.circleSize,
+        this.columnWidth
     ];
 }
 

@@ -1,4 +1,6 @@
 .table-visual-container {
+    --cell-padding: 8px;
+
     overflow: auto;
     font-family: "Segoe UI", wf_segoe-ui_normal, helvetica, arial, sans-serif;
     box-sizing: border-box;
@@ -15,7 +17,7 @@
 
             tr {
                 th {
-                    padding: 4px 8px;
+                    padding: 4px var(--cell-padding);
                     text-align: left;
                     font-weight: 600;
                     white-space: nowrap;
@@ -43,7 +45,7 @@
                 }
 
                 td {
-                    padding: 4px 8px;
+                    padding: 4px var(--cell-padding);
                     vertical-align: middle;
                     white-space: nowrap;
                     overflow: hidden;

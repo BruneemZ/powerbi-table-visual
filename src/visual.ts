@@ -77,6 +77,10 @@ export class Visual implements IVisual {
         this.tableContainer.style.width = options.viewport.width + "px";
         this.tableContainer.style.height = options.viewport.height + "px";
 
+        // Apply dynamic CSS custom properties
+        const cellPad = this.formattingSettings.tableSettings.cellPadding.value;
+        this.tableContainer.style.setProperty("--cell-padding", cellPad + "px");
+
         this.renderTable();
     }
 
@@ -173,20 +177,27 @@ export class Visual implements IVisual {
 
         const idx = this.sortState.columnIndex;
         const asc = this.sortState.ascending;
-        const textColumnCount = this.tableData.length > 0 ? this.tableData[0].textValues.length : 0;
         const hasStatus = this.columnInfos.some(c => c.role === "status");
+        const textColumnCount = this.tableData.length > 0 ? this.tableData[0].textValues.length : 0;
+
+        // Ordre des colonnes: Status (si present) | Text columns | Budget
+        const statusOffset = hasStatus ? 1 : 0;
 
         this.tableData.sort((a, b) => {
             let valA: string | number | null;
             let valB: string | number | null;
 
-            if (idx < textColumnCount) {
-                valA = a.textValues[idx]?.value || "";
-                valB = b.textValues[idx]?.value || "";
-            } else if (hasStatus && idx === textColumnCount) {
+            if (hasStatus && idx === 0) {
+                // Tri par statut
                 valA = a.status || "";
                 valB = b.status || "";
+            } else if (idx - statusOffset < textColumnCount) {
+                // Tri par colonne texte
+                const textIdx = idx - statusOffset;
+                valA = a.textValues[textIdx]?.value || "";
+                valB = b.textValues[textIdx]?.value || "";
             } else {
+                // Tri par budget (plan par defaut)
                 valA = a.budgetPlan || 0;
                 valB = b.budgetPlan || 0;
             }
@@ -231,6 +242,31 @@ export class Visual implements IVisual {
         const textColumns = this.columnInfos.filter(c => c.role === "columns");
         let logicalIndex = 0;
 
+        // Status header (EN PREMIER)
+        if (hasStatus) {
+            const th = document.createElement("th");
+            const statusCol = this.columnInfos.find(c => c.role === "status");
+            th.textContent = statusCol ? statusCol.displayName : "Status";
+            th.style.height = settings.headerHeight.value + "px";
+            th.style.fontSize = settings.headerFontSize.value + "px";
+            th.style.backgroundColor = settings.headerBackgroundColor.value.value;
+            th.style.color = settings.headerFontColor.value.value;
+            th.style.textAlign = "center";
+            th.style.cursor = "pointer";
+            th.className = "sortable-header";
+            th.style.width = this.formattingSettings.statusSettings.columnWidth.value + "px";
+            th.style.minWidth = this.formattingSettings.statusSettings.columnWidth.value + "px";
+
+            if (this.sortState && this.sortState.columnIndex === logicalIndex) {
+                th.textContent += this.sortState.ascending ? " ▲" : " ▼";
+            }
+
+            const sortIdx = logicalIndex;
+            th.addEventListener("click", () => this.onHeaderClick(sortIdx));
+            tr.appendChild(th);
+            logicalIndex++;
+        }
+
         // Text column headers
         textColumns.forEach(col => {
             const th = document.createElement("th");
@@ -253,38 +289,64 @@ export class Visual implements IVisual {
             logicalIndex++;
         });
 
-        // Status header
-        if (hasStatus) {
-            const th = document.createElement("th");
-            const statusCol = this.columnInfos.find(c => c.role === "status");
-            th.textContent = statusCol ? statusCol.displayName : "Status";
-            th.style.height = settings.headerHeight.value + "px";
-            th.style.fontSize = settings.headerFontSize.value + "px";
-            th.style.backgroundColor = settings.headerBackgroundColor.value.value;
-            th.style.color = settings.headerFontColor.value.value;
-            th.style.textAlign = "center";
-            th.style.cursor = "pointer";
-
-            if (this.sortState && this.sortState.columnIndex === logicalIndex) {
-                th.textContent += this.sortState.ascending ? " \u25B2" : " \u25BC";
-            }
-
-            const sortIdx = logicalIndex;
-            th.addEventListener("click", () => this.onHeaderClick(sortIdx));
-            tr.appendChild(th);
-            logicalIndex++;
-        }
-
         // Budget waterfall header
         if (hasBudget) {
             const th = document.createElement("th");
-            th.textContent = "Budget";
             th.style.height = settings.headerHeight.value + "px";
             th.style.fontSize = settings.headerFontSize.value + "px";
             th.style.backgroundColor = settings.headerBackgroundColor.value.value;
             th.style.color = settings.headerFontColor.value.value;
             th.style.textAlign = "center";
             th.style.minWidth = this.formattingSettings.budgetChartSettings.chartWidth.value + "px";
+            th.style.padding = "2px 4px";
+            th.style.lineHeight = "1.2";
+
+            // Title
+            const titleDiv = document.createElement("div");
+            titleDiv.textContent = "Budget";
+            titleDiv.style.fontWeight = "600";
+            titleDiv.style.marginBottom = "2px";
+            th.appendChild(titleDiv);
+
+            // Legend
+            const legendDiv = document.createElement("div");
+            legendDiv.style.display = "flex";
+            legendDiv.style.justifyContent = "center";
+            legendDiv.style.gap = "8px";
+            legendDiv.style.fontSize = (settings.headerFontSize.value - 2) + "px";
+            legendDiv.style.fontWeight = "400";
+            legendDiv.style.opacity = "0.85";
+
+            const chartSettings = this.formattingSettings.budgetChartSettings;
+            const legendItems: { label: string; color: string }[] = [
+                { label: "Plan", color: chartSettings.planColor.value.value },
+                { label: "Forecast", color: chartSettings.forecastColor.value.value },
+                { label: "Actual", color: chartSettings.actualColor.value.value }
+            ];
+
+            legendItems.forEach(item => {
+                const span = document.createElement("span");
+                span.style.display = "inline-flex";
+                span.style.alignItems = "center";
+                span.style.gap = "3px";
+
+                const dot = document.createElement("span");
+                dot.style.width = "8px";
+                dot.style.height = "8px";
+                dot.style.borderRadius = "2px";
+                dot.style.backgroundColor = item.color;
+                dot.style.display = "inline-block";
+                dot.style.flexShrink = "0";
+
+                const label = document.createElement("span");
+                label.textContent = item.label;
+
+                span.appendChild(dot);
+                span.appendChild(label);
+                legendDiv.appendChild(span);
+            });
+
+            th.appendChild(legendDiv);
             tr.appendChild(th);
         }
 
@@ -303,6 +365,20 @@ export class Visual implements IVisual {
                 : settings.rowColor2.value.value;
             tr.style.backgroundColor = bgColor;
 
+            // Status cell (EN PREMIER)
+            if (hasStatus) {
+                const td = document.createElement("td");
+                td.style.textAlign = "center";
+                td.style.verticalAlign = "middle";
+                td.style.height = settings.rowHeight.value + "px";
+                td.style.width = this.formattingSettings.statusSettings.columnWidth.value + "px";
+                td.style.minWidth = this.formattingSettings.statusSettings.columnWidth.value + "px";
+                td.style.borderBottom = `1px solid ${settings.borderColor.value.value}`;
+                const svg = this.createStatusCircle(row.status || "");
+                td.appendChild(svg);
+                tr.appendChild(td);
+            }
+
             // Text cells
             row.textValues.forEach(tv => {
                 const td = document.createElement("td");
@@ -312,20 +388,6 @@ export class Visual implements IVisual {
                 td.style.borderBottom = `1px solid ${settings.borderColor.value.value}`;
                 tr.appendChild(td);
             });
-
-            // Status cell
-            if (hasStatus) {
-                const td = document.createElement("td");
-                td.style.textAlign = "center";
-                td.style.verticalAlign = "middle";
-                td.style.height = settings.rowHeight.value + "px";
-                td.style.borderBottom = `1px solid ${settings.borderColor.value.value}`;
-                if (row.status) {
-                    const svg = this.createStatusCircle(row.status);
-                    td.appendChild(svg);
-                }
-                tr.appendChild(td);
-            }
 
             // Budget waterfall cell
             if (hasBudget) {
@@ -576,12 +638,19 @@ export class Visual implements IVisual {
 
     private formatBudgetValue(value: number): string {
         if (value === null || value === undefined) return "";
+        if (value === 0) return "0";
 
         const abs = Math.abs(value);
-        if (abs >= 1000000) {
-            return (value / 1000000).toFixed(1) + "M";
+        const sign = value < 0 ? "-" : "";
+
+        if (abs >= 1000000000) {
+            return sign + (abs / 1000000000).toFixed(1) + "B";
+        } else if (abs >= 1000000) {
+            const formatted = abs / 1000000;
+            return sign + (formatted % 1 === 0 ? formatted.toFixed(0) : formatted.toFixed(1)) + "M";
         } else if (abs >= 1000) {
-            return (value / 1000).toFixed(0) + "K";
+            const formatted = abs / 1000;
+            return sign + (formatted % 1 === 0 ? formatted.toFixed(0) : formatted.toFixed(1)) + "K";
         }
         return value.toFixed(0);
     }

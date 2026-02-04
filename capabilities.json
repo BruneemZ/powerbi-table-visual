@@ -80,6 +80,10 @@
         "borderColor": {
           "displayName": "Border Color",
           "type": { "fill": { "solid": { "color": true } } }
+        },
+        "cellPadding": {
+          "displayName": "Cell Padding",
+          "type": { "numeric": true }
         }
       }
     },
@@ -100,6 +104,10 @@
         },
         "circleSize": {
           "displayName": "Circle Size",
+          "type": { "numeric": true }
+        },
+        "columnWidth": {
+          "displayName": "Status Column Width",
           "type": { "numeric": true }
         }
       }
