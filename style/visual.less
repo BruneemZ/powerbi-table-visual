@@ -7,7 +7,8 @@
 
     .table-visual {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
         table-layout: fixed;
 
         thead {
@@ -24,6 +25,7 @@
                     border-bottom: 2px solid #ccc;
                     user-select: none;
                     position: relative;
+                    overflow: visible;
 
                     &.sortable-header {
                         cursor: pointer;
@@ -35,17 +37,22 @@
 
                     .col-resize-handle {
                         position: absolute;
-                        right: 0;
+                        right: -3px;
                         top: 0;
                         bottom: 0;
-                        width: 5px;
-                        cursor: col-resize;
+                        width: 7px;
+                        cursor: col-resize !important;
                         background: transparent;
-                        z-index: 2;
+                        z-index: 10;
 
-                        &:hover,
+                        &:hover {
+                            background: rgba(255, 255, 255, 0.5);
+                            border-right: 2px solid rgba(255, 255, 255, 0.8);
+                        }
+
                         &:active {
-                            background: rgba(255, 255, 255, 0.3);
+                            background: rgba(255, 255, 255, 0.5);
+                            border-right: 2px solid rgba(255, 255, 255, 0.8);
                         }
                     }
                 }

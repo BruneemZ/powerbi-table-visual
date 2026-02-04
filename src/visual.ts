@@ -174,6 +174,16 @@ export class Visual implements IVisual {
         const handle = document.createElement("div");
         handle.className = "col-resize-handle";
 
+        // Inline styles as fallback to ensure resize always works
+        handle.style.position = "absolute";
+        handle.style.right = "-3px";
+        handle.style.top = "0";
+        handle.style.bottom = "0";
+        handle.style.width = "7px";
+        handle.style.cursor = "col-resize";
+        handle.style.zIndex = "10";
+        handle.style.background = "transparent";
+
         handle.addEventListener("mousedown", (e: MouseEvent) => {
             e.preventDefault();
             e.stopPropagation();
@@ -181,8 +191,10 @@ export class Visual implements IVisual {
 
             const startX = e.clientX;
             const startWidth = th.offsetWidth;
+            handle.style.background = "rgba(255,255,255,0.5)";
 
             const onMouseMove = (moveEvent: MouseEvent) => {
+                moveEvent.preventDefault();
                 const diff = moveEvent.clientX - startX;
                 const newWidth = Math.max(30, startWidth + diff);
                 this.columnWidths.set(logicalIndex, newWidth);
@@ -209,7 +221,7 @@ export class Visual implements IVisual {
             const onMouseUp = () => {
                 document.removeEventListener("mousemove", onMouseMove);
                 document.removeEventListener("mouseup", onMouseUp);
-                // Delay reset to prevent sort trigger
+                handle.style.background = "transparent";
                 setTimeout(() => { this.isResizing = false; }, 50);
             };
 
@@ -217,6 +229,9 @@ export class Visual implements IVisual {
             document.addEventListener("mouseup", onMouseUp);
         });
 
+        // Ensure th can contain absolute-positioned children
+        th.style.position = "relative";
+        th.style.overflow = "visible";
         th.appendChild(handle);
     }
 
